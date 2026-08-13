@@ -1,0 +1,58 @@
+module.exports = (sequelize, DataTypes) => {
+  const CustomerDetails = sequelize.define(
+    "CustomerDetails",
+    {
+      id: {
+        type: DataTypes.BIGINT,
+        autoIncrement: true,
+        primaryKey: true,
+      },
+      contact_id: {
+        type: DataTypes.STRING,
+        unique: true,
+      },
+      is_associated_to_branch: DataTypes.BOOLEAN,
+      designation: DataTypes.STRING,
+      department: DataTypes.STRING,
+      photo_url: DataTypes.STRING,
+      primary_contact_id: DataTypes.STRING,
+      owner_id: DataTypes.STRING,
+      owner_name: DataTypes.STRING,
+      currency_symbol: DataTypes.STRING,
+      exchange_rate: DataTypes.DECIMAL(15, 2),
+      branch_id: DataTypes.STRING,
+      branch_name: DataTypes.STRING,
+      location_id: DataTypes.STRING,
+      location_name: DataTypes.STRING,
+      opening_balance_amount: DataTypes.DECIMAL(15, 2),
+      unused_retainer_payments: DataTypes.DECIMAL(15, 2),
+      payment_reminder_enabled: DataTypes.BOOLEAN,
+      is_sms_enabled: DataTypes.BOOLEAN,
+      is_consent_agreed: DataTypes.BOOLEAN,
+      tax_id: DataTypes.STRING,
+      tax_name: DataTypes.STRING,
+      tax_percentage: DataTypes.DECIMAL(5, 2),
+      trader_name: DataTypes.STRING,
+      legal_name: DataTypes.STRING,
+      vat_reg_no: DataTypes.STRING,
+      tax_reg_no: DataTypes.STRING,
+      udyam_reg_no: DataTypes.STRING,
+      contact_tax_information: DataTypes.JSON,
+      billing_address: DataTypes.JSON,
+      shipping_address: DataTypes.JSON,
+      contact_persons: DataTypes.JSON,
+      default_templates: DataTypes.JSON,
+      customer_currency_summaries: DataTypes.JSON,
+      additional_information: DataTypes.JSON,
+      registration_details: DataTypes.JSON,
+    },
+    {
+      tableName: "customer_details",
+      timestamps: true,
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+    },
+  );
+
+  return CustomerDetails;
+};

@@ -1,0 +1,34 @@
+require("dotenv").config();
+
+const express = require("express");
+
+const app = express();
+
+app.use(express.json());
+
+const db = require("./models");
+db.sequelize
+   .sync({ alter: false })
+  .then(() => {
+    console.log("Database Connected");
+  })
+  .catch(console.error);
+
+const authRoutes = require("./routes/auth.routes");
+const zohoRoutes = require("./routes/zoho.routes");
+const dashboardRoutes = require("./routes/dashboard.routes");
+const generate_chalan = require("./routes/generate_chalan.routes");
+const scanRoutes = require("./routes/scan.routes");
+
+app.use("/auth", authRoutes);
+
+app.use("/zoho", zohoRoutes);
+app.use("/", dashboardRoutes);
+app.use("/", generate_chalan);
+app.use("/", scanRoutes);
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Server Running on ${PORT}`);
+});
