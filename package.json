@@ -2,11 +2,9 @@
   "name": "dc_managment",
   "version": "1.0.0",
   "main": "index.js",
-  
   "scripts": {
-      "start": "node index.js",
-       "dev": "node index.js"
-  
+    "start": "node index.js",
+    "dev": "node index.js"
   },
   "keywords": [],
   "author": "",
@@ -15,6 +13,7 @@
   "dependencies": {
     "axios": "^1.19.0",
     "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "i": "^0.3.7",

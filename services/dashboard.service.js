@@ -1,4 +1,3 @@
-
 const { Op } = require("sequelize");
 const db = require("../models");
 const zohoService = require("./zoho.service");
@@ -9,66 +8,68 @@ const DeliveryChallanDetails = db.DeliveryChallanDetails;
 
 const DeliveryChallanLineItem = db.DeliveryChallanLineItem;
 
+const DeliveryChallanContact = db.DeliveryChallanContact;
 
 const DeliveryChallanTransaction = db.DeliveryChallanTransaction;
-const Customer = db.Customer;              // ? ADD THIS
+const Customer = db.Customer; // ? ADD THIS
 const CustomerDetails = db.CustomerDetails; // ? ADD THIS
 
 const DeliveryChallanEwaybill = db.DeliveryChallanEwaybill;
 
-
-
-
 exports.getDashboard = async (page, limit, search) => {
   try {
-    const challans = await zohoService.getAllDeliveryChallans(page, limit, search);
+    const challans = await zohoService.getAllDeliveryChallans(
+      page,
+      limit,
+      search,
+    );
 
     for (const dc of challans) {
       let deliveryChallan = await DeliveryChallan.findOne({
         where: { deliverychallan_id: dc.deliverychallan_id },
       });
-let deliveryDetail = await DeliveryChallanDetails.findOne({
-    where: {
-        deliverychallan_id: dc.deliverychallan_id
-    }
-});
+      let deliveryDetail = await DeliveryChallanDetails.findOne({
+        where: {
+          deliverychallan_id: dc.deliverychallan_id,
+        },
+      });
 
-const detailPayload = {
-    deliverychallan_id: dc.deliverychallan_id,
+      const detailPayload = {
+        deliverychallan_id: dc.deliverychallan_id,
 
-    documents: dc.documents,
-    line_items: dc.line_items,
-    billing_address: dc.billing_address,
-    shipping_address: dc.shipping_address,
-    ewaybills: dc.ewaybills,
-    taxes: dc.taxes,
-    custom_fields: dc.custom_fields,
-    custom_field_hash: dc.custom_field_hash,
-    registration_details: dc.registration_details,
-    contact_persons: dc.contact_persons,
-    tags: dc.tags,
+        documents: dc.documents,
+        line_items: dc.line_items,
+        billing_address: dc.billing_address,
+        shipping_address: dc.shipping_address,
+        ewaybills: dc.ewaybills,
+        taxes: dc.taxes,
+        custom_fields: dc.custom_fields,
+        custom_field_hash: dc.custom_field_hash,
+        registration_details: dc.registration_details,
+        contact_persons: dc.contact_persons,
+        tags: dc.tags,
 
-    created_time: dc.created_time,
-    last_modified_time: dc.last_modified_time,
+        created_time: dc.created_time,
+        last_modified_time: dc.last_modified_time,
 
-    created_by_id: dc.created_by_id,
+        created_by_id: dc.created_by_id,
 
-    template_id: dc.template_id,
-    template_name: dc.template_name,
-    page_width: dc.page_width,
-    page_height: dc.page_height,
-    orientation: dc.orientation,
-    template_type: dc.template_type,
+        template_id: dc.template_id,
+        template_name: dc.template_name,
+        page_width: dc.page_width,
+        page_height: dc.page_height,
+        orientation: dc.orientation,
+        template_type: dc.template_type,
 
-    attachment_name: dc.attachment_name,
-     zoho_response: dc,
-};
+        attachment_name: dc.attachment_name,
+        zoho_response: dc,
+      };
 
-if (!deliveryDetail) {
-    await DeliveryChallanDetails.create(detailPayload);
-} else {
-    await deliveryDetail.update(detailPayload);
-}
+      if (!deliveryDetail) {
+        await DeliveryChallanDetails.create(detailPayload);
+      } else {
+        await deliveryDetail.update(detailPayload);
+      }
       let scanStatus = "Pending";
       if (deliveryChallan) {
         scanStatus = deliveryChallan.status;
@@ -129,7 +130,8 @@ if (!deliveryDetail) {
                 contact_persons: contact.contact_persons,
                 contact_tax_information: contact.contact_tax_information,
                 default_templates: contact.default_templates,
-                customer_currency_summaries: contact.customer_currency_summaries,
+                customer_currency_summaries:
+                  contact.customer_currency_summaries,
                 additional_information: contact.additional_information,
                 created_time: contact.created_time,
                 last_modified_time: contact.last_modified_time,
@@ -171,7 +173,8 @@ if (!deliveryDetail) {
                 shipping_address: contact.shipping_address,
                 contact_persons: contact.contact_persons,
                 default_templates: contact.default_templates,
-                customer_currency_summaries: contact.customer_currency_summaries,
+                customer_currency_summaries:
+                  contact.customer_currency_summaries,
                 additional_information: contact.additional_information,
                 registration_details: contact.registration_details,
               });
@@ -181,16 +184,21 @@ if (!deliveryDetail) {
           console.log(
             "Customer Sync Failed",
             dc.customer_id,
-            err.response?.data || err.message
+            err.response?.data || err.message,
           );
         }
       }
 
       // ---- Contact fallback values ----
       let contactName =
-        dc.cf_contact_name || customer?.contact_name || customer?.customer_name || null;
-      let contactDesignation = dc.cf_contact_designation || customer?.designation || null;
-      let contactMobile = dc.cf_contact_mobile_number || customer?.mobile || null;
+        dc.cf_contact_name ||
+        customer?.contact_name ||
+        customer?.customer_name ||
+        null;
+      let contactDesignation =
+        dc.cf_contact_designation || customer?.designation || null;
+      let contactMobile =
+        dc.cf_contact_mobile_number || customer?.mobile || null;
 
       const challanPayload = {
         deliverychallan_id: dc.deliverychallan_id,
@@ -260,46 +268,55 @@ if (!deliveryDetail) {
     // ==============================
     // Search + Fetch (with Customer JOIN)
     // ==============================
-let where = {};
+    let where = {};
 
-if (search) {
-    const term = `%${search}%`;
+    if (search) {
+      const term = `%${search}%`;
 
-    // matching customer_ids fetch first
-    const matchedCustomers = await Customer.findAll({
+      // matching customer_ids fetch first
+      const matchedCustomers = await Customer.findAll({
         where: {
-            [Op.or]: [
-                { contact_name: { [Op.like]: term } },
-                { company_name: { [Op.like]: term } },
-                { mobile: { [Op.like]: term } },
-                { email: { [Op.like]: term } },
-            ],
+          [Op.or]: [
+            { contact_name: { [Op.like]: term } },
+            { company_name: { [Op.like]: term } },
+            { mobile: { [Op.like]: term } },
+            { email: { [Op.like]: term } },
+          ],
         },
         attributes: ["contact_id"],
         raw: true,
-    });
+      });
 
-    const matchedCustomerIds = matchedCustomers.map((c) => c.contact_id);
+      const matchedCustomerIds = matchedCustomers.map((c) => c.contact_id);
 
-    where[Op.or] = [
+      where[Op.or] = [
         { deliverychallan_number: { [Op.like]: term } },
         { cf_po_number: { [Op.like]: term } },
         { reference_number: { [Op.like]: term } },
-        ...(matchedCustomerIds.length ? [{ customer_id: { [Op.in]: matchedCustomerIds } }] : []),
-    ];
-}
+        ...(matchedCustomerIds.length
+          ? [{ customer_id: { [Op.in]: matchedCustomerIds } }]
+          : []),
+      ];
+    }
 
-const records = await DeliveryChallan.findAll({
-    where,
-    include: [
+    const records = await DeliveryChallan.findAll({
+      where,
+      include: [
         {
-            model: Customer,
-            attributes: ["contact_name", "customer_name", "company_name", "mobile", "email", "designation"],
-            include: [{ model: CustomerDetails }],
+          model: Customer,
+          attributes: [
+            "contact_name",
+            "customer_name",
+            "company_name",
+            "mobile",
+            "email",
+            "designation",
+          ],
+          include: [{ model: CustomerDetails }],
         },
-    ],
-    order: [["date", "DESC"]],
-});
+      ],
+      order: [["date", "DESC"]],
+    });
 
     const response = records.map((dc) => ({
       id: dc.id,
@@ -311,20 +328,19 @@ const records = await DeliveryChallan.findAll({
 
       customer_name: dc.Customer?.customer_name || dc.customer_name,
 
-
-
       po_number: dc.cf_po_number,
       po_date: dc.cf_po_date,
 
       date: dc.date,
       total: dc.total,
       reference_number: dc.reference_number,
- contact_name: dc.Customer?.contact_name || dc.cf_contact_name,
-    contact_mobile_number: dc.Customer?.mobile || dc.cf_contact_mobile_number,
-    billing_address_full: dc.Customer?.CustomerDetails?.billing_address || dc.billing_address,
-    shipping_address_full: dc.Customer?.CustomerDetails?.shipping_address || dc.shipping_address,
+      contact_name: dc.Customer?.contact_name || dc.cf_contact_name,
+      contact_mobile_number: dc.Customer?.mobile || dc.cf_contact_mobile_number,
+      billing_address_full:
+        dc.Customer?.CustomerDetails?.billing_address || dc.billing_address,
+      shipping_address_full:
+        dc.Customer?.CustomerDetails?.shipping_address || dc.shipping_address,
 
-    
       location_name: dc.location_name,
 
       zcrm_potential_id: dc.zcrm_potential_id,
@@ -352,9 +368,11 @@ const records = await DeliveryChallan.findAll({
       cf_contact_name: dc.cf_contact_name,
       cf_contact_name_unformatted: dc.cf_contact_name_unformatted,
       cf_contact_designation: dc.cf_contact_designation,
+
       cf_contact_designation_unformatted: dc.cf_contact_designation_unformatted,
       cf_contact_mobile_number: dc.cf_contact_mobile_number,
-      cf_contact_mobile_number_unformatted: dc.cf_contact_mobile_number_unformatted,
+      cf_contact_mobile_number_unformatted:
+        dc.cf_contact_mobile_number_unformatted,
 
       branch_id: dc.branch_id,
       location_id: dc.location_id,
@@ -379,386 +397,714 @@ const records = await DeliveryChallan.findAll({
   }
 };
 
-
-
-
-
-
-
-
-
-
-
-
 exports.getDeliveryChallanDetails = async (deliverychallanId) => {
+  try {
+    if (!deliverychallanId) {
+      const err = new Error("deliverychallan_id is required");
+      err.statusCode = 400;
+      throw err;
+    }
 
-    try {
+    // Dashboard table lo check
+    const deliveryChallan = await DeliveryChallan.findOne({
+      where: {
+        deliverychallan_id: deliverychallanId,
+      },
+    });
 
-        if (!deliverychallanId) {
-            const err = new Error("deliverychallan_id is required");
-            err.statusCode = 400;
-            throw err;
-        }
+    if (!deliveryChallan) {
+      const err = new Error("Delivery Challan not found");
+      err.statusCode = 404;
+      throw err;
+    }
 
-        // Dashboard table lo check
-        const deliveryChallan = await DeliveryChallan.findOne({
-            where: {
-                deliverychallan_id: deliverychallanId
-            }
+    // Zoho API
+    const zohoResponse =
+      await zohoService.getDeliveryChallanById(deliverychallanId);
+
+    const dc = zohoResponse.deliverychallan || zohoResponse;
+
+    console.log(
+      "DC EWAYBILLSssssssssssssssssssssssssssssssssssssssssssssss =>",
+      dc.ewaybills,
+    );
+    if (!dc || !dc.deliverychallan_id) {
+      const err = new Error("Delivery Challan not found in Zoho");
+      err.statusCode = 404;
+      throw err;
+    }
+
+    // Details table lo search
+    let deliveryChallanDetails = await DeliveryChallanDetails.findOne({
+      where: {
+        deliverychallan_id: dc.deliverychallan_id,
+      },
+    });
+
+    // ================= PREPARE CONTACTS =================
+    // NOTE: Zoho puts cf_contact_name / cf_contact_designation /
+    // cf_contact_mobile_number / cf_supplier_contact_* INSIDE
+    // dc.custom_field_hash, NOT on dc directly. Reading dc.cf_contact_name
+    // (top-level) was always undefined, so nothing ever got prepared.
+    let preparedContacts = [];
+
+    const cfHash = dc.custom_field_hash || {};
+
+    // Customer-side contact (from cf_contact_* custom fields)
+    if (
+      cfHash.cf_contact_name ||
+      cfHash.cf_contact_designation ||
+      cfHash.cf_contact_mobile_number
+    ) {
+      preparedContacts.push({
+        contact_name: cfHash.cf_contact_name || null,
+        designation: cfHash.cf_contact_designation || null,
+        mobile: cfHash.cf_contact_mobile_number || null,
+        email: null,
+        type: "customer",
+      });
+    }
+
+    // Supplier-side contact (from cf_supplier_contact_* custom fields)
+    if (
+      cfHash.cf_supplier_contact_person_name ||
+      cfHash.cf_supplier_contact_designation ||
+      cfHash.cf_supplier_contact_person_number
+    ) {
+      preparedContacts.push({
+        contact_name: cfHash.cf_supplier_contact_person_name || null,
+        designation: cfHash.cf_supplier_contact_designation || null,
+        mobile: cfHash.cf_supplier_contact_person_number || null,
+        email: null,
+        type: "vendor",
+      });
+    }
+
+    // Multiple contacts from Zoho (contact_persons array on the
+    // delivery challan itself — separate from the custom fields above)
+    if (Array.isArray(dc.contact_persons)) {
+      preparedContacts.push(
+        ...dc.contact_persons.map((c) => ({
+          contact_name: c.contact_name || c.name,
+          designation: c.designation,
+          mobile: c.mobile || c.phone || c.mobile_number,
+          email: c.email,
+          type: "customer",
+        })),
+      );
+    }
+
+    const challanPayload = {
+      deliverychallan_id: dc.deliverychallan_id,
+
+      deliverychallan_number: dc.deliverychallan_number,
+
+      customer_id: dc.customer_id,
+      customer_name: dc.customer_name,
+      company_name: dc.company_name,
+
+      challan_status: dc.challan_status,
+
+      reference_number: dc.reference_number,
+
+      date: dc.date,
+
+      currency_id: dc.currency_id,
+      currency_code: dc.currency_code,
+
+      total: dc.total,
+      bcy_total: dc.bcy_total,
+
+      created_time: dc.created_time,
+      last_modified_time: dc.last_modified_time,
+
+      has_attachment: dc.has_attachment,
+
+      tags: dc.tags,
+
+      cf_po_number: dc.cf_po_number,
+      cf_po_date: dc.cf_po_date,
+
+      // multi-contact JSON snapshot on delivery_challan_details
+      customer_contacts: preparedContacts,
+
+      branch_id: dc.branch_id,
+
+      location_id: dc.location_id,
+      location_name: dc.location_name,
+
+      registration_details: dc.registration_details,
+
+      documents: dc.documents,
+      billing_address: dc.billing_address,
+      shipping_address: dc.shipping_address,
+      taxes: dc.taxes,
+
+      custom_fields: dc.custom_fields,
+      custom_field_hash: dc.custom_field_hash,
+
+      zoho_response: dc,
+
+      sync_status: "success",
+    };
+
+    // Details save/update
+    if (!deliveryChallanDetails) {
+      deliveryChallanDetails =
+        await DeliveryChallanDetails.create(challanPayload);
+    } else {
+      await deliveryChallanDetails.update(challanPayload);
+    }
+
+    // Normalized contacts table: wipe old rows, re-insert current ones
+    await DeliveryChallanContact.destroy({
+      where: {
+        deliverychallan_id: dc.deliverychallan_id,
+      },
+    });
+
+    for (let i = 0; i < preparedContacts.length; i++) {
+      await DeliveryChallanContact.create({
+        deliverychallan_id: dc.deliverychallan_id,
+        contact_type: preparedContacts[i].type || "customer",
+        contact_name: preparedContacts[i].contact_name,
+        designation: preparedContacts[i].designation,
+        mobile: preparedContacts[i].mobile,
+        email: preparedContacts[i].email,
+        sequence: i + 1,
+      });
+    }
+
+    // ---------------- Save Line Items ----------------
+
+    if (dc.line_items && dc.line_items.length > 0) {
+      for (const item of dc.line_items) {
+        let existingLineItem = await DeliveryChallanLineItem.findOne({
+          where: {
+            line_item_id: item.line_item_id,
+          },
         });
 
-        if (!deliveryChallan) {
-            const err = new Error("Delivery Challan not found");
-            err.statusCode = 404;
-            throw err;
-        }
+        const lineItemPayload = {
+          deliverychallan_id: dc.deliverychallan_id,
 
-        // Zoho API
-        const zohoResponse = await zohoService.getDeliveryChallanById(deliverychallanId);
+          line_item_id: item.line_item_id,
 
-        const dc = zohoResponse.deliverychallan || zohoResponse;
+          item_id: item.item_id,
 
-        console.log("DC EWAYBILLSssssssssssssssssssssssssssssssssssssssssssssss =>", dc.ewaybills);
-        if (!dc || !dc.deliverychallan_id) {
-            const err = new Error("Delivery Challan not found in Zoho");
-            err.statusCode = 404;
-            throw err;
-        }
+          item_name: item.name,
 
-        // Details table lo search
-        let deliveryChallanDetails = await DeliveryChallanDetails.findOne({
-            where: {
-                deliverychallan_id: dc.deliverychallan_id
-            }
-        });
+          description: item.description,
 
+          quantity: item.quantity,
 
-        const challanPayload = {
+          unit: item.unit,
 
-            deliverychallan_id: dc.deliverychallan_id,
+          rate: item.rate,
 
-            deliverychallan_number: dc.deliverychallan_number,
+          bcy_rate: item.bcy_rate,
 
-            customer_id: dc.customer_id,
-            customer_name: dc.customer_name,
-            company_name: dc.company_name,
+          tax_id: item.tax_id,
 
-            // status: dc.status,
-            // challan_status: dc.challan_status,
+          tax_name: item.tax_name,
 
-                // Local Scan Status
-    // status: scanStatus,
+          tax_percentage: item.tax_percentage,
 
-    // Zoho Status
-    challan_status: dc.challan_status,
+          hsn_or_sac: item.hsn_or_sac,
 
-            reference_number: dc.reference_number,
+          location_id: item.location_id,
 
-            date: dc.date,
+          location_name: item.location_name,
 
-            currency_id: dc.currency_id,
-            currency_code: dc.currency_code,
+          scanned_qty: existingLineItem ? existingLineItem.scanned_qty : 0,
 
-            total: dc.total,
-            bcy_total: dc.bcy_total,
+          scan_required: existingLineItem
+            ? existingLineItem.scan_required
+            : true,
 
-            created_time: dc.created_time,
-            last_modified_time: dc.last_modified_time,
-
-            has_attachment: dc.has_attachment,
-
-            tags: dc.tags,
-
-            cf_po_number: dc.cf_po_number,
-            cf_po_date: dc.cf_po_date,
-
-            cf_contact_name: dc.cf_contact_name,
-            cf_contact_designation: dc.cf_contact_designation,
-            cf_contact_mobile_number: dc.cf_contact_mobile_number,
-
-            branch_id: dc.branch_id,
-
-            location_id: dc.location_id,
-            location_name: dc.location_name,
-
-            registration_details: dc.registration_details,
-
-            // line_items: dc.line_items,
-
-            documents: dc.documents,
-            billing_address: dc.billing_address,
-            shipping_address: dc.shipping_address,
-            taxes: dc.taxes,
-
-            custom_fields: dc.custom_fields,
-            custom_field_hash: dc.custom_field_hash,
-
-            zoho_response: dc,
-
-            sync_status: "success"
+          status: existingLineItem ? existingLineItem.status : "Pending",
         };
 
-        // Details save/update
-        if (!deliveryChallanDetails) {
-
-            deliveryChallanDetails = await DeliveryChallanDetails.create(challanPayload);
-
+        if (!existingLineItem) {
+          await DeliveryChallanLineItem.create(lineItemPayload);
         } else {
-
-            await deliveryChallanDetails.update(challanPayload);
-
+          await existingLineItem.update(lineItemPayload);
         }
+      }
+    }
 
-        // ---------------- Save Line Items ----------------
+    // Fetch line items
+    const lineItems = await DeliveryChallanLineItem.findAll({
+      where: {
+        deliverychallan_id: dc.deliverychallan_id,
+      },
+      raw: true,
+    });
 
-        if (dc.line_items && dc.line_items.length > 0) {
-
-            for (const item of dc.line_items) {
-
-                let existingLineItem = await DeliveryChallanLineItem.findOne({
-                    where: {
-                        line_item_id: item.line_item_id
-                    }
-                });
-
-                const lineItemPayload = {
-
-                    deliverychallan_id: dc.deliverychallan_id,
-
-                    line_item_id: item.line_item_id,
-
-                    item_id: item.item_id,
-
-                    item_name: item.name,
-
-                    description: item.description,
-
-                    quantity: item.quantity,
-
-                    unit: item.unit,
-
-                    rate: item.rate,
-
-                    bcy_rate: item.bcy_rate,
-
-                    tax_id: item.tax_id,
-
-                    tax_name: item.tax_name,
-
-                    tax_percentage: item.tax_percentage,
-
-                    hsn_or_sac: item.hsn_or_sac,
-
-                    location_id: item.location_id,
-
-                    location_name: item.location_name,
-
-                    scanned_qty: existingLineItem ? existingLineItem.scanned_qty : 0,
-
-                    scan_required: existingLineItem ? existingLineItem.scan_required : true,
-
-                    status: existingLineItem ? existingLineItem.status : "Pending"
-
-                };
-
-                if (!existingLineItem) {
-
-                    await DeliveryChallanLineItem.create(lineItemPayload);
-
-                } else {
-
-                    await existingLineItem.update(lineItemPayload);
-
-                }
-
-            }
-
-        }
-// Fetch line items
-const lineItems = await DeliveryChallanLineItem.findAll({
-    where: {
-        deliverychallan_id: dc.deliverychallan_id
-    },
-    raw: true
-});
     // ---------------- Save Eway Bills ----------------
 
-if (dc.ewaybills && Array.isArray(dc.ewaybills) && dc.ewaybills.length > 0) {
- console.log("Inside Ewaybill Looppppppppppppppppppppppppppppppp");
-    for (const eway of dc.ewaybills) {
-
+    if (
+      dc.ewaybills &&
+      Array.isArray(dc.ewaybills) &&
+      dc.ewaybills.length > 0
+    ) {
+      console.log("Inside Ewaybill Looppppppppppppppppppppppppppppppp");
+      for (const eway of dc.ewaybills) {
         let existingEway = await DeliveryChallanEwaybill.findOne({
-            where: {
-                deliverychallan_id: dc.deliverychallan_id,
-                ewaybill_id: eway.ewaybill_id
-            }
+          where: {
+            deliverychallan_id: dc.deliverychallan_id,
+            ewaybill_id: eway.ewaybill_id,
+          },
         });
 
         const ewayPayload = {
-            deliverychallan_id: dc.deliverychallan_id,
-            ewaybill_id: eway.ewaybill_id || null,
-            eway_bill_no: eway.ewaybill_number || null,
-            ewaybill_status: eway.ewaybill_status || null,
-            ewaybill_status_formatted: eway.ewaybill_status_formatted || null,
-            ewaybill_date: eway.ewaybill_date || null,
-            ewaybill_expiry_date: eway.ewaybill_expiry_date || null,
-            sub_supply_type: eway.sub_supply_type || null,
-            transportation_mode: eway.transportation_mode || null,
-            transporter_name: eway.transporter_name || null,
-            transporter_id: eway.transporter_id || null,
-            transporter_registration_id: eway.transporter_registration_id || null,
+          deliverychallan_id: dc.deliverychallan_id,
+          ewaybill_id: eway.ewaybill_id || null,
+          eway_bill_no: eway.ewaybill_number || null,
+          ewaybill_status: eway.ewaybill_status || null,
+          ewaybill_status_formatted: eway.ewaybill_status_formatted || null,
+          ewaybill_date: eway.ewaybill_date || null,
+          ewaybill_expiry_date: eway.ewaybill_expiry_date || null,
+          sub_supply_type: eway.sub_supply_type || null,
+          transportation_mode: eway.transportation_mode || null,
+          transporter_name: eway.transporter_name || null,
+          transporter_id: eway.transporter_id || null,
+          transporter_registration_id: eway.transporter_registration_id || null,
         };
-        console.log("EWAY PAYLOADDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD =>", ewayPayload);
+        console.log(
+          "EWAY PAYLOADDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD =>",
+          ewayPayload,
+        );
 
         if (!existingEway) {
-              console.log("Creating Eway Bill");
-            await DeliveryChallanEwaybill.create(ewayPayload);
+          console.log("Creating Eway Bill");
+          await DeliveryChallanEwaybill.create(ewayPayload);
         } else {
-            console.log("Updating Eway Bill");
-            await existingEway.update(ewayPayload);
+          console.log("Updating Eway Bill");
+          await existingEway.update(ewayPayload);
         }
+      }
     }
-}
 
-const mergedLineItems = dc.line_items.map(item => {
+    const mergedLineItems = dc.line_items.map((item) => {
+      const dbItem = lineItems.find(
+        (x) => x.line_item_id === item.line_item_id,
+      );
 
-    const dbItem = lineItems.find(
-        x => x.line_item_id === item.line_item_id
-    );
-
-    return {
+      return {
         ...item,
 
         scanned_qty: dbItem ? dbItem.scanned_qty : 0,
         scan_required: dbItem ? dbItem.scan_required : true,
-        status: dbItem ? dbItem.status : "Pending"
-    };
+        status: dbItem ? dbItem.status : "Pending",
+      };
+    });
 
-});
+    const saved = deliveryChallanDetails.toJSON();
 
-const saved = deliveryChallanDetails.toJSON();
-
-saved.scan_status = deliveryChallan
-    ? deliveryChallan.status
-    : "Pending";
-
+    saved.scan_status = deliveryChallan ? deliveryChallan.status : "Pending";
 
     const ewaybills = await DeliveryChallanEwaybill.findAll({
-    where: { deliverychallan_id: dc.deliverychallan_id },
-    raw: true,
-});
+      where: { deliverychallan_id: dc.deliverychallan_id },
+      raw: true,
+    });
 
-saved.ewaybills = ewaybills;
+    saved.ewaybills = ewaybills;
 
-// Full Zoho data + Local Scan data
-saved.line_items = mergedLineItems;
+    // Fresh contacts read-back from the normalized table for the response
+    const contacts = await DeliveryChallanContact.findAll({
+      where: {
+        deliverychallan_id: dc.deliverychallan_id,
+      },
+      order: [["sequence", "ASC"]],
+      raw: true,
+    });
 
-// Optional
-delete saved.zoho_response.line_items;
+    saved.contacts = contacts;
 
-return {
-    success: true,
-    data: saved
-};
-        // ---------------- Response ----------------
+    // Full Zoho data + Local Scan data
+    saved.line_items = mergedLineItems;
 
-       
+    // Optional
+    delete saved.zoho_response.line_items;
 
-    } catch (error) {
-
-         console.log("ERROR =>", error);
+    return {
+      success: true,
+      data: saved,
+    };
+  } catch (error) {
+    console.log("ERROR =>", error);
 
     console.log("ERROR RESPONSE =>", error.response?.data);
 
     console.log("ERROR PARENT =>", error.parent);
 
     console.log("ERROR ERRORS =>", error.errors);
-        throw error;
 
-    }
-
+    throw error;
+  }
 };
 
- 
+// exports.getDeliveryChallanDetails = async (deliverychallanId) => {
 
+//     try {
 
- 
-exports.closeDeliveryChallan = async (deliverychallan_id, user) => {
+//         if (!deliverychallanId) {
+//             const err = new Error("deliverychallan_id is required");
+//             err.statusCode = 400;
+//             throw err;
+//         }
 
-    // Check Delivery Challan
-    const challan = await DeliveryChallan.findOne({
-        where: {
-            deliverychallan_id
-        }
-    });
+//         // Dashboard table lo check
+//         const deliveryChallan = await DeliveryChallan.findOne({
+//             where: {
+//                 deliverychallan_id: deliverychallanId
+//             }
+//         });
 
-    if (!challan) {
-        throw new Error("Delivery Challan not found");
-    }
+//         if (!deliveryChallan) {
+//             const err = new Error("Delivery Challan not found");
+//             err.statusCode = 404;
+//             throw err;
+//         }
 
-    // Check pending items
-    // const pending = await DeliveryChallanLineItem.count({
-    //     where: {
-    //         deliverychallan_id,
-    //         status: {
-    //             [Op.ne]: "Completed"
-    //         }
-    //     }
-    // });
+//         // Zoho API
+//         const zohoResponse = await zohoService.getDeliveryChallanById(deliverychallanId);
 
-    // if (pending > 0) {
-    //     throw new Error("Some items are still pending");
-    // }
+//         const dc = zohoResponse.deliverychallan || zohoResponse;
 
+//         console.log("DC EWAYBILLSssssssssssssssssssssssssssssssssssssssssssssss =>", dc.ewaybills);
+//         if (!dc || !dc.deliverychallan_id) {
+//             const err = new Error("Delivery Challan not found in Zoho");
+//             err.statusCode = 404;
+//             throw err;
+//         }
 
-    // Save old status before update
-const oldStatus = challan.status;
+//         // Details table lo search
+//         let deliveryChallanDetails = await DeliveryChallanDetails.findOne({
+//             where: {
+//                 deliverychallan_id: dc.deliverychallan_id
+//             }
+//         });
 
-// Update DC Status
-await challan.update({
-    status: "Closed"
-});
-    // Update DC Status
-    // await challan.update({
-    //     status: "Closed"
-    // });
+//         const challanPayload = {
 
-    // Insert Transaction
-//     await DeliveryChallanTransaction.create({
+//             deliverychallan_id: dc.deliverychallan_id,
 
-//         deliverychallan_id,
+//             deliverychallan_number: dc.deliverychallan_number,
 
-//         transaction_type: "CLOSE_DC",
+//             customer_id: dc.customer_id,
+//             customer_name: dc.customer_name,
+//             company_name: dc.company_name,
 
-//         old_status: "In Progress",
+//             // status: dc.status,
+//             // challan_status: dc.challan_status,
 
-//         new_status: "Closed",
+//                 // Local Scan Status
+//     // status: scanStatus,
 
-//         remarks: "Delivery Challan Closed",
+//     // Zoho Status
+//     challan_status: dc.challan_status,
 
-//         performed_by: user.id,
-//  performed_by_name: user.name
+//             reference_number: dc.reference_number,
+
+//             date: dc.date,
+
+//             currency_id: dc.currency_id,
+//             currency_code: dc.currency_code,
+
+//             total: dc.total,
+//             bcy_total: dc.bcy_total,
+
+//             created_time: dc.created_time,
+//             last_modified_time: dc.last_modified_time,
+
+//             has_attachment: dc.has_attachment,
+
+//             tags: dc.tags,
+
+//             cf_po_number: dc.cf_po_number,
+//             cf_po_date: dc.cf_po_date,
+
+//             cf_contact_name: dc.cf_contact_name,
+//             cf_contact_designation: dc.cf_contact_designation,
+//             cf_contact_mobile_number: dc.cf_contact_mobile_number,
+
+//             branch_id: dc.branch_id,
+
+//             location_id: dc.location_id,
+//             location_name: dc.location_name,
+
+//             registration_details: dc.registration_details,
+
+//             // line_items: dc.line_items,
+
+//             documents: dc.documents,
+//             billing_address: dc.billing_address,
+//             shipping_address: dc.shipping_address,
+//             taxes: dc.taxes,
+
+//             custom_fields: dc.custom_fields,
+//             custom_field_hash: dc.custom_field_hash,
+
+//             zoho_response: dc,
+
+//             sync_status: "success"
+//         };
+
+//         // Details save/update
+//         if (!deliveryChallanDetails) {
+
+//             deliveryChallanDetails = await DeliveryChallanDetails.create(challanPayload);
+
+//         } else {
+
+//             await deliveryChallanDetails.update(challanPayload);
+
+//         }
+
+//         // ---------------- Save Line Items ----------------
+
+//         if (dc.line_items && dc.line_items.length > 0) {
+
+//             for (const item of dc.line_items) {
+
+//                 let existingLineItem = await DeliveryChallanLineItem.findOne({
+//                     where: {
+//                         line_item_id: item.line_item_id
+//                     }
+//                 });
+
+//                 const lineItemPayload = {
+
+//                     deliverychallan_id: dc.deliverychallan_id,
+
+//                     line_item_id: item.line_item_id,
+
+//                     item_id: item.item_id,
+
+//                     item_name: item.name,
+
+//                     description: item.description,
+
+//                     quantity: item.quantity,
+
+//                     unit: item.unit,
+
+//                     rate: item.rate,
+
+//                     bcy_rate: item.bcy_rate,
+
+//                     tax_id: item.tax_id,
+
+//                     tax_name: item.tax_name,
+
+//                     tax_percentage: item.tax_percentage,
+
+//                     hsn_or_sac: item.hsn_or_sac,
+
+//                     location_id: item.location_id,
+
+//                     location_name: item.location_name,
+
+//                     scanned_qty: existingLineItem ? existingLineItem.scanned_qty : 0,
+
+//                     scan_required: existingLineItem ? existingLineItem.scan_required : true,
+
+//                     status: existingLineItem ? existingLineItem.status : "Pending"
+
+//                 };
+
+//                 if (!existingLineItem) {
+
+//                     await DeliveryChallanLineItem.create(lineItemPayload);
+
+//                 } else {
+
+//                     await existingLineItem.update(lineItemPayload);
+
+//                 }
+
+//             }
+
+//         }
+// // Fetch line items
+// const lineItems = await DeliveryChallanLineItem.findAll({
+//     where: {
+//         deliverychallan_id: dc.deliverychallan_id
+//     },
+//     raw: true
+// });
+//     // ---------------- Save Eway Bills ----------------
+
+// if (dc.ewaybills && Array.isArray(dc.ewaybills) && dc.ewaybills.length > 0) {
+//  console.log("Inside Ewaybill Looppppppppppppppppppppppppppppppp");
+//     for (const eway of dc.ewaybills) {
+
+//         let existingEway = await DeliveryChallanEwaybill.findOne({
+//             where: {
+//                 deliverychallan_id: dc.deliverychallan_id,
+//                 ewaybill_id: eway.ewaybill_id
+//             }
+//         });
+
+//         const ewayPayload = {
+//             deliverychallan_id: dc.deliverychallan_id,
+//             ewaybill_id: eway.ewaybill_id || null,
+//             eway_bill_no: eway.ewaybill_number || null,
+//             ewaybill_status: eway.ewaybill_status || null,
+//             ewaybill_status_formatted: eway.ewaybill_status_formatted || null,
+//             ewaybill_date: eway.ewaybill_date || null,
+//             ewaybill_expiry_date: eway.ewaybill_expiry_date || null,
+//             sub_supply_type: eway.sub_supply_type || null,
+//             transportation_mode: eway.transportation_mode || null,
+//             transporter_name: eway.transporter_name || null,
+//             transporter_id: eway.transporter_id || null,
+//             transporter_registration_id: eway.transporter_registration_id || null,
+//         };
+//         console.log("EWAY PAYLOADDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD =>", ewayPayload);
+
+//         if (!existingEway) {
+//               console.log("Creating Eway Bill");
+//             await DeliveryChallanEwaybill.create(ewayPayload);
+//         } else {
+//             console.log("Updating Eway Bill");
+//             await existingEway.update(ewayPayload);
+//         }
+//     }
+// }
+
+// const mergedLineItems = dc.line_items.map(item => {
+
+//     const dbItem = lineItems.find(
+//         x => x.line_item_id === item.line_item_id
+//     );
+
+//     return {
+//         ...item,
+
+//         scanned_qty: dbItem ? dbItem.scanned_qty : 0,
+//         scan_required: dbItem ? dbItem.scan_required : true,
+//         status: dbItem ? dbItem.status : "Pending"
+//     };
+
+// });
+
+// const saved = deliveryChallanDetails.toJSON();
+
+// saved.scan_status = deliveryChallan
+//     ? deliveryChallan.status
+//     : "Pending";
+
+//     const ewaybills = await DeliveryChallanEwaybill.findAll({
+//     where: { deliverychallan_id: dc.deliverychallan_id },
+//     raw: true,
+// });
+
+// saved.ewaybills = ewaybills;
+
+// // Full Zoho data + Local Scan data
+// saved.line_items = mergedLineItems;
+
+// // Optional
+// delete saved.zoho_response.line_items;
+
+// return {
+//     success: true,
+//     data: saved
+// };
+//         // ---------------- Response ----------------
+
+//     } catch (error) {
+
+//          console.log("ERROR =>", error);
+
+//     console.log("ERROR RESPONSE =>", error.response?.data);
+
+//     console.log("ERROR PARENT =>", error.parent);
+
+//     console.log("ERROR ERRORS =>", error.errors);
+//         throw error;
+
+//     }
+
+// };
+
+// exports.closeDeliveryChallan = async (deliverychallan_id, user) => {
+
+//     // Check Delivery Challan
+//     const challan = await DeliveryChallan.findOne({
+//         where: {
+//             deliverychallan_id
+//         }
 //     });
 
-await DeliveryChallanTransaction.create({
-    deliverychallan_id,
+//     if (!challan) {
+//         throw new Error("Delivery Challan not found");
+//     }
 
-    transaction_type: "CLOSE_DC",
+//     // Check pending items
+//     // const pending = await DeliveryChallanLineItem.count({
+//     //     where: {
+//     //         deliverychallan_id,
+//     //         status: {
+//     //             [Op.ne]: "Completed"
+//     //         }
+//     //     }
+//     // });
 
-    old_status: oldStatus,
+//     // if (pending > 0) {
+//     //     throw new Error("Some items are still pending");
+//     // }
 
-    new_status: "Closed",
+//     // Save old status before update
+// const oldStatus = challan.status;
 
-    remarks: "Delivery Challan Closed",
+// // Update DC Status
+// await challan.update({
+//     status: "Closed"
+// });
+//     // Update DC Status
+//     // await challan.update({
+//     //     status: "Closed"
+//     // });
 
-    performed_by: user.id,
+//     // Insert Transaction
+// //     await DeliveryChallanTransaction.create({
 
-    performed_by_name: user.name
-});
+// //         deliverychallan_id,
 
-    // +````````````````````
-    return {
-        message: "Delivery Challan Closed Successfully"
-    };
+// //         transaction_type: "CLOSE_DC",
 
-};
+// //         old_status: "In Progress",
+
+// //         new_status: "Closed",
+
+// //         remarks: "Delivery Challan Closed",
+
+// //         performed_by: user.id,
+// //  performed_by_name: user.name
+// //     });
+
+// await DeliveryChallanTransaction.create({
+//     deliverychallan_id,
+
+//     transaction_type: "CLOSE_DC",
+
+//     old_status: oldStatus,
+
+//     new_status: "Closed",
+
+//     remarks: "Delivery Challan Closed",
+
+//     performed_by: user.id,
+
+//     performed_by_name: user.name
+// });
+
+//     // +````````````````````
+//     return {
+//         message: "Delivery Challan Closed Successfully"
+//     };
+
+// };

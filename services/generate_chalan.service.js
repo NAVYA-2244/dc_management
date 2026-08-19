@@ -9,6 +9,8 @@ const DeliveryChallanDetails = db.DeliveryChallanDetails;
 
 const DeliveryChallanLineItem = db.DeliveryChallanLineItem;
 
+
+const DeliveryChallanContact = db.DeliveryChallanContact;
 const DeliveryChallanTransaction = db.DeliveryChallanTransaction;
 const DeliveryChallanSerialNumber = db.DeliveryChallanSerialNumber;
 const Organizations = db.Organizations;
@@ -150,6 +152,420 @@ exports.generatePdf = async (deliverychallan_id) => {
   };
 };
 
+
+
+
+// exports.downloadPdf = async (deliverychallan_id, res) => {
+//   const challan = await DeliveryChallan.findOne({
+//     where: {
+//       deliverychallan_id,
+//     },
+//     raw: true,
+//   });
+
+//   if (!challan) {
+//     throw new Error("Delivery Challan not found");
+//   }
+
+//   // Address lives in delivery_challan_details.shipping_address (JSON: { address: "..." })
+//   const challanDetails = await DeliveryChallanDetails.findOne({
+//     where: { deliverychallan_id },
+//     raw: true,
+//   });
+
+//   // let customerAddress = "";
+//   // if (challanDetails && challanDetails.shipping_address) {
+//   //   try {
+//   //     const parsedAddress =
+//   //       typeof challanDetails.shipping_address === "string"
+//   //         ? JSON.parse(challanDetails.shipping_address)
+//   //         : challanDetails.shipping_address;
+//   //     customerAddress = (parsedAddress && parsedAddress.address) || "";
+//   //   } catch (e) {
+//   //     customerAddress = "";
+//   //   }
+//   // }
+//   let customerAddress = "";
+//   if (challanDetails && challanDetails.shipping_address) {
+//     try {
+//       const a =
+//         typeof challanDetails.shipping_address === "string"
+//           ? JSON.parse(challanDetails.shipping_address)
+//           : challanDetails.shipping_address;
+
+//       // Zoho address object splits street/city/state/zip/country into separate keys â€”
+//       // concatenate all of them so the full address prints (not just the street line).
+//       const addressParts = [
+//         a.address,
+//         a.street2,
+//         [a.city, a.state].filter(Boolean).join(", "),
+//         [a.zip, a.country].filter(Boolean).join(" "),
+//       ].filter((part) => part && part.trim() !== "");
+
+//       customerAddress = addressParts.join("\n");
+//     } catch (e) {
+//       customerAddress = "";
+//     }
+//   }
+
+//   // Entro Labs sign-off rep details â€” organizations table nunchi (only 1 row, Entro Labs own org)
+//   const orgInfo = await Organizations.findOne({ raw: true });
+//   const entroRepName = (orgInfo && orgInfo.contact_name) || "";
+//   const entroRepPhone = (orgInfo && orgInfo.phone) || "";
+
+//   const items = await DeliveryChallanLineItem.findAll({
+//     where: {
+//       deliverychallan_id,
+//     },
+//     raw: true,
+//   });
+
+//   // Get serial numbers for every item
+//   for (const item of items) {
+//     item.serials = await DeliveryChallanSerialNumber.findAll({
+//       where: {
+//         line_item_id: item.line_item_id,
+//       },
+//       raw: true,
+//     });
+//   }
+
+//   // ---------- Product table rows ----------
+//   let productRows = "";
+
+//   items.forEach((item, index) => {
+//     productRows += `
+//       <tr>
+//         <td class="center">${index + 1}</td>
+//         <td>${item.item_name}</td>
+//         <td class="center">${item.quantity}</td>
+//         <td class="center">-</td>
+//       </tr>
+//     `;
+//   });
+
+//   // ---------- Helper: build 3-column serial number table (Figma style) ----------
+//   const buildSerialTable = (serials) => {
+//     if (!serials || !serials.length) {
+//       return `
+//         <table class="serial-table" cellspacing="0" cellpadding="6">
+//           <tr><td colspan="6" align="center">No Serial Numbers</td></tr>
+//         </table>
+//       `;
+//     }
+
+//     const colCount = 3;
+//     const perCol = Math.ceil(serials.length / colCount);
+//     const columns = [];
+//     for (let c = 0; c < colCount; c++) {
+//       columns.push(serials.slice(c * perCol, c * perCol + perCol));
+//     }
+
+//     let rows = "";
+//     for (let r = 0; r < perCol; r++) {
+//       rows += "<tr>";
+//       for (let c = 0; c < colCount; c++) {
+//         const rowItem = columns[c][r];
+//         if (rowItem) {
+//           const serialIndex = c * perCol + r + 1;
+//           rows += `
+//             <td class="sno">${serialIndex}</td>
+//             <td>${rowItem.serial_number}</td>
+//           `;
+//         } else {
+//           rows += `<td class="sno"></td><td></td>`;
+//         }
+//       }
+//       rows += "</tr>";
+//     }
+
+//     return `
+//       <table class="serial-table" width="100%" cellspacing="0" cellpadding="6">
+//         ${rows}
+//       </table>
+//     `;
+//   };
+
+//  // let serialSections = "";
+//   // items.forEach((item) => {
+//   //   serialSections += `
+//   //     <div class="serial-heading">
+//   //       ITEM : ${item.item_name} &ndash; ${item.quantity} NOS SERIAL NOS
+//   //     </div>
+//   //     ${buildSerialTable(item.serials)}
+//   //   `;
+//   // });
+
+
+//   let serialSections = "";
+
+// items.forEach((item) => {
+//   // Serial numbers leni items ni skip cheyyi
+//   if (!item.serials || item.serials.length === 0) {
+//     return;
+//   }
+
+//   serialSections += `
+//     <div class="serial-heading">
+//       ITEM : ${item.item_name} &ndash; ${item.quantity} NOS SERIAL NOS
+//     </div>
+//     ${buildSerialTable(item.serials)}
+//   `;
+// });
+
+//   // ---------- Final HTML (Figma design) ----------
+//   const html = `
+// <!DOCTYPE html>
+// <html>
+// <head>
+// <meta charset="UTF-8">
+// <style>
+//   * { box-sizing: border-box; }
+//   body {
+//     font-family: Arial, Helvetica, sans-serif;
+//     padding: 30px;
+//     font-size: 12px;
+//     color: #1a1a1a;
+//   }
+//   table {
+//     width: 100%;
+//     border-collapse: collapse;
+//   }
+//   .center { text-align: center; }
+
+//   /* Header */
+//   .header-table td { border: none; padding: 0; vertical-align: top; }
+//   .company-name { font-size: 16px; font-weight: 700 !important; color: #000; }
+//   .company-meta { font-size: 11px; margin-top: 4px; line-height: 1.6; }
+//   .logo-block { text-align: right; }
+
+
+//   h1.title {
+//     text-align: center;
+//     font-weight: 800px;
+//     color: #003366;
+//     font-size: 18px;
+//     margin: 22px 0 20px 0;
+//   }
+
+//   /* DELIVERED TO block */
+//   .info-table {
+//     width: 100%;
+//     border-collapse: collapse;
+//     border: 1px solid #12305e;
+//     margin-bottom: 20px;
+//     table-layout: fixed;
+//   }
+//   .info-table td {
+//     border: 1px solid #12305e;
+//     padding: 10px 12px;
+//     vertical-align: top;
+//     word-wrap: break-word;
+//   }
+
+//   .info-header {
+//     background: #003366;
+//     color: #fff;
+//     font-weight: bold;
+//     font-size: 14px;
+//   }
+
+//   .info-value { font-size: 14px; font-weight: 700; color: #003366; }
+//   .info-values { font-size: 12px; margin-top: 4px; color: #1f2937; line-height: 1.5; }
+
+//   .kv-key { font-weight: bold; color: #1a1a1a; font-size: 11px; }
+//   .kv-val { font-size: 12px; color: #1a1a1a; }
+
+//   /* Product table */
+//   .product-table { margin-bottom: 25px; border: 1px solid #12305e; }
+//   .product-table th {
+//     background: #12305e;
+//     color: #fff;
+//     padding: 8px;
+//     font-size: 11px;
+//     text-align: left;
+//   }
+//   .product-table td { border: 1px solid #ccc; padding: 7px; font-size: 11px; }
+
+//   /* Serial section */
+//   .serial-heading {
+//     background: #eaf1fb;
+//     border: 1px solid #12305e;
+//     color: #12305e;
+//     font-weight: bold;
+//     font-size: 11px;
+//     padding: 7px 10px;
+//     margin-top: 22px;
+//   }
+//   .serial-table { border: 1px solid #ccc; margin-bottom: 5px; }
+//   .serial-table td {
+//     border: 1px solid #ccc;
+//     padding: 5px 8px;
+//     font-size: 10.5px;
+//   }
+//   .serial-table td.sno {
+//     width: 30px;
+//     text-align: center;
+//     color: #12305e;
+//     font-weight: bold;
+//   }
+
+//   /* Sign off */
+//   .signoff-title {
+//     background: #12305e;
+//     color: #fff;
+//     font-weight: bold;
+//     font-size: 12px;
+//     padding: 8px 10px;
+//     margin-top: 30px;
+//   }
+//   .signoff-table { border: 1px solid #12305e; border-top: none; }
+//   .signoff-table td { border: 1px solid #12305e; padding: 10px; vertical-align: top; font-size: 11px; }
+//   .signoff-subheader { color: #2e7d32; font-weight: bold; text-align: center; font-size: 11px; }
+//   .signoff-key { font-weight: bold; color: #333; width: 35%; }
+//   .signoff-seal { height: 45px; }
+// </style>
+// </head>
+// <body>
+
+//   <table class="header-table">
+//     <tr>
+//   <td width="45%" style="vertical-align:middle;">
+//     <div class="company-name">ENTRO LABS IT SOLUTIONS PVT. LTD.</div>
+//     <div class="company-meta">
+//       Corp Office: 1st Floor, Plot No:479, Rd No:10,<br>
+//       Kakatiya Hills, Madhapur, Hyderabad&ndash; 500081
+//     </div>
+//   </td>
+//   <td width="25%" style="text-align:left; vertical-align:middle;">
+//     <div class="cin-number" style="font-size:12px; color:#333;">
+//       <span style="font-weight:700; color:#1a1a1a;text-align: left;">CIN Number:</span><br>
+//       U72200AP2015PTC097811
+//     </div>
+//   </td>
+//   <td width="20%" style="text-align:right; vertical-align:middle;">
+//   <img
+//  src="data:image/png;base64,${logoBase64}"
+//  style="max-width:150px;width:100%;height:auto;"
+// />
+   
+//   </td>
+// </tr>
+//   </table>
+
+//   <h1 class="title">DELIVERY CHALLAN &amp; INSTALLATION REPORT</h1>
+
+// <table class="info-table">
+//   <colgroup>
+//     <col style="width:34%">
+//     <col style="width:22%">
+//     <col style="width:44%">
+//   </colgroup>
+//   <tr>
+//     <td class="info-header">DELIVERED TO</td>
+//   <td class="kv-key">DATE</td>
+//     <td class="kv-val">${challan.date || ""}</td>
+//   </tr>
+//   <tr>
+//     <td rowspan="4">
+//       <div class="info-value">${challan.customer_name || ""}</div>
+//       <div class="info-values" style="white-space:pre-line;">${customerAddress}</div>
+//     </td>
+//  <td class="kv-key">D.C. NO.</td>
+//     <td class="kv-val">${challan.deliverychallan_number || ""}</td>
+//   </tr>
+//   <tr>
+//    <td class="kv-key">PO NO.</td>
+//     <td class="kv-val">${challan.cf_po_number || ""}</td>
+//   </tr>
+//   <tr>
+//     <td class="kv-key">CONTACT PERSON</td>
+//     <td class="kv-val">${challan.cf_contact_name || ""}</td>
+//   </tr>
+//   <tr>
+//   <td class="kv-key">CONTACT NUMBER</td>
+//     <td class="kv-val">${challan.cf_contact_mobile_number || ""}</td>
+//   </tr>
+// </table>
+
+//   <table class="product-table" cellspacing="0" cellpadding="0">
+//     <tr>
+//       <th width="8%">S.NO</th>
+//       <th width="52%">PRODUCT DESCRIPTION</th>
+//       <th width="20%">QTY</th>
+//       <th width="20%">WARRANTY</th>
+//     </tr>
+//     ${productRows}
+//   </table>
+
+//   ${serialSections}
+
+//   <div class="signoff-title">INSTALLATION SIGN OFF</div>
+//   <table class="signoff-table" cellspacing="0" cellpadding="0">
+//     <tr>
+//       <td width="50%" class="signoff-subheader">FOR ${(challan.customer_name || "").toUpperCase()}</td>
+//       <td width="50%" class="signoff-subheader">FOR ENTRO LABS IT SOLUTIONS PVT. LTD.</td>
+//     </tr>
+//     <tr>
+//       <td>
+//         <span class="signoff-key">Name &amp; Designation</span><br>
+//         ${challan.cf_contact_name || ""}
+//       </td>
+//       <td>
+//         <span class="signoff-key">Name &amp; Designation</span><br>
+//         ${entroRepName}
+//       </td>
+//     </tr>
+//     <tr>
+//       <td>
+//         <span class="signoff-key">Contact Number</span><br>
+//         ${challan.cf_contact_mobile_number || ""}
+//       </td>
+//       <td>
+//         <span class="signoff-key">Contact Number</span><br>
+//         ${entroRepPhone}
+//       </td>
+//     </tr>
+//     <tr>
+//       <td class="signoff-seal"><span class="signoff-key">Seal &amp; Signature</span></td>
+//       <td class="signoff-seal"><span class="signoff-key">Seal &amp; Signature</span></td>
+//     </tr>
+//   </table>
+
+// </body>
+// </html>
+// `;
+
+//   const browser = await puppeteer.launch({
+//     headless: true,
+//     args: ["--no-sandbox", "--disable-setuid-sandbox"],
+//   });
+
+//   const page = await browser.newPage();
+
+//   await page.setContent(html, {
+//     waitUntil: "networkidle0",
+//   });
+
+//   const pdf = await page.pdf({
+//     format: "A4",
+//     printBackground: true,
+//     margin: { top: "20px", bottom: "20px", left: "20px", right: "20px" },
+//   });
+
+//   await browser.close();
+
+//   res.setHeader("Content-Type", "application/pdf");
+
+//   res.setHeader(
+//     "Content-Disposition",
+//     `attachment; filename=${challan.deliverychallan_number}.pdf`,
+//   );
+
+//   return res.send(pdf);
+// };
+
+
 exports.downloadPdf = async (deliverychallan_id, res) => {
   const challan = await DeliveryChallan.findOne({
     where: {
@@ -168,18 +584,6 @@ exports.downloadPdf = async (deliverychallan_id, res) => {
     raw: true,
   });
 
-  // let customerAddress = "";
-  // if (challanDetails && challanDetails.shipping_address) {
-  //   try {
-  //     const parsedAddress =
-  //       typeof challanDetails.shipping_address === "string"
-  //         ? JSON.parse(challanDetails.shipping_address)
-  //         : challanDetails.shipping_address;
-  //     customerAddress = (parsedAddress && parsedAddress.address) || "";
-  //   } catch (e) {
-  //     customerAddress = "";
-  //   }
-  // }
   let customerAddress = "";
   if (challanDetails && challanDetails.shipping_address) {
     try {
@@ -188,7 +592,7 @@ exports.downloadPdf = async (deliverychallan_id, res) => {
           ? JSON.parse(challanDetails.shipping_address)
           : challanDetails.shipping_address;
 
-      // Zoho address object splits street/city/state/zip/country into separate keys â€”
+      // Zoho address object splits street/city/state/zip/country into separate keys —
       // concatenate all of them so the full address prints (not just the street line).
       const addressParts = [
         a.address,
@@ -203,10 +607,62 @@ exports.downloadPdf = async (deliverychallan_id, res) => {
     }
   }
 
-  // Entro Labs sign-off rep details â€” organizations table nunchi (only 1 row, Entro Labs own org)
+  // Entro Labs sign-off rep details — organizations table nunchi (only 1 row, Entro Labs own org)
   const orgInfo = await Organizations.findOne({ raw: true });
   const entroRepName = (orgInfo && orgInfo.contact_name) || "";
   const entroRepPhone = (orgInfo && orgInfo.phone) || "";
+
+  // ---------- Customer-side contacts (multiple contacts support) ----------
+  // Pulled from the normalized delivery_challan_contacts table instead of
+  // the single cf_contact_name/cf_contact_designation/cf_contact_mobile_number
+  // columns on `delivery_challans` — those only ever held ONE contact.
+  const allContacts = await DeliveryChallanContact.findAll({
+    where: { deliverychallan_id },
+    order: [["sequence", "ASC"]],
+    raw: true,
+  });
+
+  const customerContacts = allContacts.filter(
+    (c) => c.contact_type === "customer",
+  );
+
+  // Fallback to the old single-contact columns if the contacts table has
+  // nothing for this DC (e.g. older records synced before this table existed).
+  const effectiveCustomerContacts =
+    customerContacts.length > 0
+      ? customerContacts
+      : challan.cf_contact_name || challan.cf_contact_mobile_number
+        ? [
+            {
+              contact_name: challan.cf_contact_name,
+              designation: challan.cf_contact_designation,
+              mobile: challan.cf_contact_mobile_number,
+            },
+          ]
+        : [];
+
+  // Builds "Name (Designation)" lines, one per contact, newline-separated
+  const buildContactNameLines = (contacts) =>
+    contacts
+      .map((c) => {
+        const name = c.contact_name || "";
+        const designation = c.designation ? ` (${c.designation})` : "";
+        //return `${name}${designation}`.trim();
+  return `${name}\n${designation}`.trim();
+      })
+      .filter((line) => line !== "")
+      .join("<br>");
+
+  const buildContactMobileLines = (contacts) =>
+    contacts
+      .map((c) => c.mobile || "")
+      .filter((m) => m !== "")
+      .join("<br>");
+
+  const contactNameHtml =
+    buildContactNameLines(effectiveCustomerContacts) || "";
+  const contactMobileHtml =
+    buildContactMobileLines(effectiveCustomerContacts) || "";
 
   const items = await DeliveryChallanLineItem.findAll({
     where: {
@@ -239,7 +695,11 @@ exports.downloadPdf = async (deliverychallan_id, res) => {
     `;
   });
 
-  // ---------- Helper: build 3-column serial number table (Figma style) ----------
+  // ---------- Helper: build serial number table with a DYNAMIC column count ----------
+  // Previously this always used 3 columns, so a single serial number left
+  // two empty columns stretched across the row. Now the column count scales
+  // with how many serials there actually are (max 3), and grows to more
+  // rows automatically as more serials come in — no wasted empty columns.
   const buildSerialTable = (serials) => {
     if (!serials || !serials.length) {
       return `
@@ -249,7 +709,8 @@ exports.downloadPdf = async (deliverychallan_id, res) => {
       `;
     }
 
-    const colCount = 3;
+    const MAX_COLS = 3;
+    const colCount = Math.min(MAX_COLS, serials.length);
     const perCol = Math.ceil(serials.length / colCount);
     const columns = [];
     for (let c = 0; c < colCount; c++) {
@@ -282,7 +743,13 @@ exports.downloadPdf = async (deliverychallan_id, res) => {
   };
 
   let serialSections = "";
+
   items.forEach((item) => {
+    // Serial numbers leni items ni skip cheyyi
+    if (!item.serials || item.serials.length === 0) {
+      return;
+    }
+
     serialSections += `
       <div class="serial-heading">
         ITEM : ${item.item_name} &ndash; ${item.quantity} NOS SERIAL NOS
@@ -327,19 +794,8 @@ exports.downloadPdf = async (deliverychallan_id, res) => {
   }
 
   /* DELIVERED TO block */
-  .info-table {
-    width: 100%;
-    border-collapse: collapse;
-    border: 1px solid #12305e;
-    margin-bottom: 20px;
-    table-layout: fixed;
-  }
-  .info-table td {
-    border: 1px solid #12305e;
-    padding: 10px 12px;
-    vertical-align: top;
-    word-wrap: break-word;
-  }
+  .info-table { width: 100%; border-collapse: collapse; border: 1px solid #12305e; margin-bottom: 20px; }
+  .info-table td { border: 1px solid #12305e; padding: 10px 12px; vertical-align: top; }
 
   .info-header {
     background: #003366;
@@ -351,7 +807,7 @@ exports.downloadPdf = async (deliverychallan_id, res) => {
   .info-value { font-size: 14px; font-weight: 700; color: #003366; }
   .info-values { font-size: 12px; margin-top: 4px; color: #1f2937; line-height: 1.5; }
 
-  .kv-key { font-weight: bold; color: #1a1a1a; font-size: 11px; }
+  .kv-key { font-weight: bold; color: #1a1a1a; font-size: 11px; width: 22%; }
   .kv-val { font-size: 12px; color: #1a1a1a; }
 
   /* Product table */
@@ -434,14 +890,9 @@ exports.downloadPdf = async (deliverychallan_id, res) => {
   <h1 class="title">DELIVERY CHALLAN &amp; INSTALLATION REPORT</h1>
 
 <table class="info-table">
-  <colgroup>
-    <col style="width:34%">
-    <col style="width:22%">
-    <col style="width:44%">
-  </colgroup>
   <tr>
     <td class="info-header">DELIVERED TO</td>
-  <td class="kv-key">DATE</td>
+    <td class="kv-key">DATE</td>
     <td class="kv-val">${challan.date || ""}</td>
   </tr>
   <tr>
@@ -449,20 +900,20 @@ exports.downloadPdf = async (deliverychallan_id, res) => {
       <div class="info-value">${challan.customer_name || ""}</div>
       <div class="info-values" style="white-space:pre-line;">${customerAddress}</div>
     </td>
- <td class="kv-key">D.C. NO.</td>
+    <td class="kv-key">D.C. NO.</td>
     <td class="kv-val">${challan.deliverychallan_number || ""}</td>
   </tr>
   <tr>
-   <td class="kv-key">PO NO.</td>
+    <td class="kv-key">PO NO.</td>
     <td class="kv-val">${challan.cf_po_number || ""}</td>
   </tr>
   <tr>
     <td class="kv-key">CONTACT PERSON</td>
-    <td class="kv-val">${challan.cf_contact_name || ""}</td>
+    <td class="kv-val">${contactNameHtml}</td>
   </tr>
   <tr>
-  <td class="kv-key">CONTACT NUMBER</td>
-    <td class="kv-val">${challan.cf_contact_mobile_number || ""}</td>
+    <td class="kv-key">CONTACT NUMBER</td>
+    <td class="kv-val">${contactMobileHtml}</td>
   </tr>
 </table>
 
@@ -487,7 +938,7 @@ exports.downloadPdf = async (deliverychallan_id, res) => {
     <tr>
       <td>
         <span class="signoff-key">Name &amp; Designation</span><br>
-        ${challan.cf_contact_name || ""}
+        ${contactNameHtml}
       </td>
       <td>
         <span class="signoff-key">Name &amp; Designation</span><br>
@@ -497,7 +948,7 @@ exports.downloadPdf = async (deliverychallan_id, res) => {
     <tr>
       <td>
         <span class="signoff-key">Contact Number</span><br>
-        ${challan.cf_contact_mobile_number || ""}
+        ${contactMobileHtml}
       </td>
       <td>
         <span class="signoff-key">Contact Number</span><br>
@@ -542,3 +993,4 @@ exports.downloadPdf = async (deliverychallan_id, res) => {
 
   return res.send(pdf);
 };
+

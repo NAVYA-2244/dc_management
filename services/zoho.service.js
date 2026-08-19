@@ -23,23 +23,56 @@ exports.getOrganizations = async () => {
 };
 
 
+// exports.getContacts = async () => {
+//   const token = await getAccessToken();
+
+//   const response = await axios.get(`${config.API_URL}/books/v3/contacts`, {
+//     params: {
+//       organization_id: config.ORGANIZATION_ID,
+//       page: 1,
+//       per_page: 10,
+//     },
+//     headers: {
+//       Authorization: `Zoho-oauthtoken ${token}`,
+//     },
+//   });
+
+//   return response.data.contacts;
+// };
+
+
+
+
 exports.getContacts = async () => {
   const token = await getAccessToken();
 
-  const response = await axios.get(`${config.API_URL}/books/v3/contacts`, {
-    params: {
-      organization_id: config.ORGANIZATION_ID,
-      page: 1,
-      per_page: 10,
-    },
-    headers: {
-      Authorization: `Zoho-oauthtoken ${token}`,
-    },
-  });
+  let page = 1;
+  let hasMore = true;
+  let contacts = [];
 
-  return response.data.contacts;
+  while (hasMore) {
+    const response = await axios.get(
+      `${config.API_URL}/books/v3/contacts`,
+      {
+        params: {
+          organization_id: config.ORGANIZATION_ID,
+          page,
+          per_page: 200,
+        },
+        headers: {
+          Authorization: `Zoho-oauthtoken ${token}`,
+        },
+      }
+    );
+
+    contacts.push(...(response.data.contacts || []));
+
+    hasMore = response.data.page_context?.has_more_page || false;
+    page++;
+  }
+
+  return contacts;
 };
-
 
 
 exports.getAllDeliveryChallans = async (page, limit,search) => {

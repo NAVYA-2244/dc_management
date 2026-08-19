@@ -47,18 +47,37 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING(50),
         allowNull: true,
       },
-      branch: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-      },
+     branch: DataTypes.STRING,
+
       otp: {
     type: DataTypes.STRING,
     allowNull: true
+
 },
 
 otp_created_at: {
     type: DataTypes.DATE,
     allowNull: true
+},
+otp_attempts: {
+  type: DataTypes.INTEGER,
+  defaultValue: 0,
+},
+otp_resend_count: {
+  type: DataTypes.INTEGER,
+  defaultValue: 0,
+},
+otp_resend_window_start: {
+  type: DataTypes.DATE,
+  allowNull: true,
+},
+otp_verified: {
+  type: DataTypes.BOOLEAN,
+  defaultValue: false,
+},
+force_password_reset: {
+  type: DataTypes.TINYINT,
+  defaultValue: 1
 },
     },
     {

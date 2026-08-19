@@ -1,42 +1,3 @@
-// const service = require("../services/dashboard.service");
-
-// exports.getDashboard = async (req, res) => {
-//   try {
-//     // const page = Number(req.query.page) || 1;
-//     // const limit = Number(req.query.limit) || 2000;
-//     const { page, limit ,search} = req.query;
-//     // const data = await dashboardService.getDashboard(page, limit);
-//     const data = await service.getDashboard(page, limit,search);
-//     res.json({
-//       success: true,
-//       data,
-//     });
-//   } catch (err) {
-//     res.status(500).json({
-//       success: false,
-//       message: err.message,
-//     });
-//   }
-// };
-// exports.getDeliveryChallanDetails = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-
-//     const data = await service.getDeliveryChallanDetails(id);
-
-//     res.json({
-//       success: true,
-
-//       data: data,
-//     });
-//   } catch (error) {
-//     res.status(error.statusCode || 500).json({
-//       success: false,
-
-//       message: error.message,
-//     });
-//   }
-// };
 
 
 
@@ -63,28 +24,48 @@ exports.getDashboard = async (req, res) => {
   }
 };
 
+// exports.getDeliveryChallanDetails = async (req, res) => {
+//   try {
+
+//     const { id } = req.params;
+
+//     const data = await service.getDeliveryChallanDetails(id);
+
+//     return res.status(200).json({
+//       result: "success",
+//       data,
+//     });
+
+//   } catch (error) {
+
+//     return res.status(error.statusCode || 500).json({
+//       result: "error",
+//       error: error.message,
+//     });
+
+//   }
+// };
+
 exports.getDeliveryChallanDetails = async (req, res) => {
   try {
-
     const { id } = req.params;
 
-    const data = await service.getDeliveryChallanDetails(id);
+    // service returns { success: true, data: {...} }
+    // we only need the inner "data" here, since "result: success" at the
+    // top already tells the caller the request succeeded.
+    const serviceResult = await service.getDeliveryChallanDetails(id);
 
     return res.status(200).json({
       result: "success",
-      data,
+      data: serviceResult.data,
     });
-
   } catch (error) {
-
     return res.status(error.statusCode || 500).json({
       result: "error",
       error: error.message,
     });
-
   }
 };
-
 exports.closeDeliveryChallan = async (req, res) => {
   try {
 

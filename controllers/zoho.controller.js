@@ -291,7 +291,7 @@
 //   }
 // };
 
-
+const axios = require("axios");
 
 const zohoService = require("../services/zoho.service");
 const syncService = require("../services/sync.service");
@@ -306,6 +306,70 @@ function extractErrorMessage(err) {
     "Something went wrong"
   );
 }
+
+exports.callback = async (req, res) => {
+  try {
+    const { code } = req.query;
+    if (!code) {
+      return res.status(400).json({
+        result: "error",
+        message: "Authorization code not received from Zoho",
+      });
+    }
+    console.log("=== ZOHO CALLBACK ===");
+    console.log("Authorization code received");
+
+    const axios = require("axios");
+    const config = require("../config/zoho.config");
+
+    const tokenResponse = await axios.post(
+      `${config.ACCOUNTS_URL}/oauth/v2/token`,
+      null,
+      {
+        params: {
+          grant_type: "authorization_code",
+          client_id: config.CLIENT_ID,
+          client_secret: config.CLIENT_SECRET,
+          redirect_uri: config.REDIRECT_URI,
+          code,
+        },
+      }
+    );
+
+    console.log("=== ZOHO TOKEN EXCHANGE RESPONSE ===");
+    console.log(tokenResponse.data);
+
+    if (!tokenResponse.data.refresh_token) {
+      return res.status(400).json({
+        result: "error",
+        message:
+          "No refresh_token in Zoho response (code may be reused/expired, or app already authorized before without prompt=consent)",
+        data: tokenResponse.data,
+      });
+    }
+
+    console.log(
+      "=== NEW REFRESH TOKEN (copy this into .env as ZOHO_REFRESH_TOKEN) ==="
+    );
+    console.log(tokenResponse.data.refresh_token);
+
+    return res.json({
+      result: "success",
+      message:
+        "Token exchange successful. Copy refresh_token into .env as ZOHO_REFRESH_TOKEN, then pm2 restart with --update-env",
+      access_token: tokenResponse.data.access_token,
+      refresh_token: tokenResponse.data.refresh_token,
+      expires_in: tokenResponse.data.expires_in,
+    });
+  } catch (err) {
+    console.error("ZOHO CALLBACK ERROR:", err.response?.data || err.message);
+    return res.status(500).json({
+      result: "error",
+      message: err.message,
+      data: err.response?.data,
+    });
+  }
+};
 
 exports.organizations = async (req, res) => {
   try {

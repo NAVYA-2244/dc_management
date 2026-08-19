@@ -40,6 +40,9 @@ exports.skipScan = async (line_item_id) => {
 };
 
 exports.scanSerial = async (line_item_id, serial_number) => {
+
+console.log("Received Serial Numberrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr =>", serial_number);
+
   const item = await DeliveryChallanLineItem.findOne({
     where: {
       line_item_id,
@@ -48,14 +51,25 @@ exports.scanSerial = async (line_item_id, serial_number) => {
 
   if (!item) throw new Error("Item not found");
 
-  const exists = await DeliveryChallanSerialNumber.findOne({
-    where: {
-      line_item_id,
-      serial_number,
-    },
-  });
+ // const exists = await DeliveryChallanSerialNumber.findOne({
+  //   where: {
+  //     line_item_id,
+  //     serial_number,
+  //   },
+  // });
 
-  if (exists) throw new Error("Serial already scanned");
+  // if (exists) throw new Error("Serial already scanned");
+
+  const exists = await DeliveryChallanSerialNumber.findOne({
+  where: {
+    serial_number,
+  },
+});
+
+if (exists) {
+  throw new Error("This serial number has already been scanned.");
+}
+
 
   await DeliveryChallanSerialNumber.create({
     line_item_id,
@@ -127,16 +141,28 @@ exports.saveSerialNumbers = async (line_item_id, body) => {
 
   const serial_number = body.serial_number;
 
-  const exists = await DeliveryChallanSerialNumber.findOne({
-    where: {
-      line_item_id,
-      serial_number,
-    },
-  });
+ // const exists = await DeliveryChallanSerialNumber.findOne({
+  //   where: {
+  //     line_item_id,
+  //     serial_number,
+  //   },
+  // });
 
-  if (exists) {
-    throw new Error("Serial already scanned");
-  }
+  // if (exists) {
+  //   throw new Error("Serial already scanned");
+  // }
+
+
+  const exists = await DeliveryChallanSerialNumber.findOne({
+  where: {
+    serial_number,
+  },
+});
+
+if (exists) {
+  throw new Error("This serial number has already been scanned.");
+}
+
 
   await DeliveryChallanSerialNumber.create({
     deliverychallan_id: item.deliverychallan_id,

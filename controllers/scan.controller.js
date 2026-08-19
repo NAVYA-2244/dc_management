@@ -21,6 +21,7 @@ exports.getLineItem = async (req, res) => {
 
 
 exports.skipScan = async (req, res) => {
+console.log(req.body);
   try {
     const data = await scanService.skipScan(
       req.params.line_item_id

@@ -20,4 +20,6 @@ db.DeliveryChallan.belongsTo(db.Customer, { foreignKey: "customer_id", targetKey
 db.Customer.hasMany(db.DeliveryChallan, { foreignKey: "customer_id", sourceKey: "contact_id" });
 db.Customer.hasOne(db.CustomerDetails, { foreignKey: "contact_id", sourceKey: "contact_id" });
 db.CustomerDetails.belongsTo(db.Customer, { foreignKey: "contact_id", targetKey: "contact_id" });
+db.CustomerDetails.belongsTo(db.Customer, { foreignKey: "contact_id", targetKey: "contact_id" });
+db.DeliveryChallanContact = require("./deliveryChallanContact.model")(sequelize, db.Sequelize);
 module.exports = db;

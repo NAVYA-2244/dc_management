@@ -13,7 +13,10 @@ module.exports = {
 
   REDIRECT_URI: process.env.ZOHO_REDIRECT_URI,
 
-  ACCOUNTS_URL: "https://accounts.zoho.com",
+  ACCOUNTS_URL: "https://accounts.zoho.in",
 
-  API_URL: "https://www.zohoapis.com",
+  API_URL: "https://www.zohoapis.in",
+
+
+
 };

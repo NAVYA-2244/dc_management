@@ -49,7 +49,7 @@ router.get("/shipments/:id", controller.shipmentById);
 
 router.get("/locations", controller.locations);
 
-
+router.get("/callback", controller.callback);
 
 
 
